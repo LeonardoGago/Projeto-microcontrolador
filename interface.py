@@ -18,9 +18,9 @@ dificuldade_options = ["Facil", "Medio", "Dificil", "Voltar"]
 tempo_options = ["1 min", "3 min", "5 min", "Infinito", "Voltar"]
 
 # Estados
-button_positions = {}
-_selected_option = None
-_mouse_pos = (0, 0)
+button_positions = {} #Dicionario que armazena tamanho e posição dos botões 
+_selected_option = None #Armazena o último botão clicado
+_mouse_pos = (0, 0) #Armazena a posição do mouse na tela 
 
 # Configurações padrão
 dificuldade = "Facil"
@@ -29,24 +29,24 @@ tempo = 60  # segundos (1 min)
 
 def draw_menu(frame):
     global button_positions
-    button_positions.clear()
-    frame[:] = BACKGROUND_COLOR
+    button_positions.clear() #Limpa o dicionario cada vez que a tela inical é desenhada
+    frame[:] = BACKGROUND_COLOR #Pinta o frame com a cord de fundo definida
     title = "MIRA NA CESTA"
-    cv2.putText(frame, title, (WIDTH // 2 - 200, 80), FONT, 1.5, (0, 255, 0), 3)
+    cv2.putText(frame, title, (WIDTH // 2 - 200, 80), FONT, 1.5, (0, 255, 0), 3) #Desenha o titulo na parte superior do frame
 
-    for idx, text in enumerate(menu_options):
-        x, y, w, h = 250, 150 + idx * 100, 300, 70
+    for idx, text in enumerate(menu_options): #Loop para desenhar os botões
+        x, y, w, h = 250, 150 + idx * 100, 300, 70 #Coordenadas com espassamento em y, largura, altura
         button_positions[text] = (x, y, w, h)
-        color = HOVER_COLOR if is_mouse_over((x, y, w, h)) else BUTTON_COLOR
-        cv2.rectangle(frame, (x, y), (x + w, y + h), color, -1)
+        color = HOVER_COLOR if is_mouse_over((x, y, w, h)) else BUTTON_COLOR #Aplica uma cor no houver
+        cv2.rectangle(frame, (x, y), (x + w, y + h), color, -1) #Desenha o retangulo
 
         display_text = text
-        if text == "Tempo":
+        if text == "Tempo": #Adiciona o tempo ao lado do botão tempo
             tempo_val = get_tempo()
             display_text += (
                 f": {'Infinito' if tempo_val is None else f'{tempo_val//60} min'}"
             )
-        elif text == "Dificuldade":
+        elif text == "Dificuldade": #Adiciona a dificuldade ao lado de dificuldade
             display_text += f": {get_dificuldade()}"
 
         text_size = cv2.getTextSize(display_text, FONT, 0.9, 2)[0]
@@ -57,7 +57,7 @@ def draw_menu(frame):
 
 def draw_dificuldade_menu(frame):
     global button_positions
-    button_positions.clear()
+    button_positions.clear() #Limpa todos os botões anteriores toda vez que a página é recarregada
     frame[:] = BACKGROUND_COLOR
     cv2.putText(
         frame,
@@ -105,32 +105,32 @@ def draw_tempo_menu(frame):
         cv2.putText(frame, text, (text_x, text_y), FONT, 1, TEXT_COLOR, 2)
 
 
-def is_mouse_over(rect):
+def is_mouse_over(rect): #Verifica constantemente a posição do mouse na tela
     x, y, w, h = rect
     return x < _mouse_pos[0] < x + w and y < _mouse_pos[1] < y + h
 
 
 def mouse_callback(event, x, y, flags, param):
     global _selected_option, _mouse_pos
-    _mouse_pos = (x, y)
-    if event == cv2.EVENT_LBUTTONDOWN:
-        for text, (bx, by, bw, bh) in button_positions.items():
-            if bx < x < bx + bw and by < y < by + bh:
-                _selected_option = text
-    elif event == cv2.EVENT_MOUSEMOVE:
-        _mouse_pos = (x, y)
+    _mouse_pos = (x, y) # Sempre atualiza a posição do mouse
+    if event == cv2.EVENT_LBUTTONDOWN: # Verifica se o botão esquerdo do mouse foi clicado
+        for text, (bx, by, bw, bh) in button_positions.items(): # Itera sobre todos os botões registrados
+            if bx < x < bx + bw and by < y < by + bh: # Verifica se o clique ocorreu DENTRO de um botão
+                _selected_option = text # Se sim, armazena o texto do botão como a opção selecionada
+    elif event == cv2.EVENT_MOUSEMOVE: # Se o mouse apenas moveu
+        _mouse_pos = (x, y) # Atualiza a posição do mouse (redundante com a primeira linha, mas garante)
 
 
-def get_selected_option():
+def get_selected_option(): #Pega o ultimo botao selecionado
     return _selected_option
 
 
-def reset_selected_option():
+def reset_selected_option(): #Reseta o ultimo botao selecionado
     global _selected_option
     _selected_option = None
 
 
-def get_mouse_pos():
+def get_mouse_pos(): #Pega a posição do mouse
     return _mouse_pos
 
 
