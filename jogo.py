@@ -106,6 +106,9 @@ while True:
         # garantindo que a altura do vídeo retornado seja a mesma da UI.
         processed_video_frame, angulo_x_servo, angulo_y_servo, disparar_status = \
             mira.rodar_mira_jogo(raw_frame, WIDTH_VIDEO, TOTAL_HEIGHT)
+        
+        # Atualiza pontuação se o Arduino informou "acertou"
+        pontuacao += mira.consumir_pontos()
 
         # --- Lógica de Tempo de Jogo ---
         time_remaining_str = "Infinito"
