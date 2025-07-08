@@ -22,11 +22,12 @@ alpha = 0.15
 
 tempo_inicio_fechada = None
 disparar = False
+disparo_enviado = False
 
 # Comunicação serial
 arduino = None
 try:
-    arduino = serial.Serial('COM8', 9600, timeout=1)
+    arduino = serial.Serial('COM6', 9600, timeout=1)
     time.sleep(2)
     print("Conexão com Arduino estabelecida.")
 except serial.SerialException as e:
@@ -38,6 +39,15 @@ angulo_x_global = 90
 angulo_y_global = 90
 lock = threading.Lock()
 
+arduino2 = None
+try:
+    arduino2 = serial.Serial('COM7', 9600, timeout=1)
+    time.sleep(2)
+    print("Conexão com o segundo Arduino estabelecida.")
+except serial.SerialException as e:
+    print(f"Erro ao conectar ao segundo Arduino: {e}")
+
+
 # --- Thread para envio dos ângulos suavizados ao Arduino ---
 def enviar_para_arduino_thread():
     global angulo_x_global, angulo_y_global
@@ -48,15 +58,52 @@ def enviar_para_arduino_thread():
                     msg = f"{angulo_x_global},{angulo_y_global}\n"
                 arduino.write(msg.encode())
                 resposta = arduino.readline().decode().strip()
-                print("Arduino respondeu:", resposta)
+                if resposta:
+                    print("Arduino respondeu:", resposta)
             except serial.SerialException as e:
                 print(f"Erro ao enviar dados ao Arduino: {e}")
-        time.sleep(0.05)  # Delay de 50 ms entre envios
+        time.sleep(0.05)
+
+
+def thread_disparo():
+    global disparar, disparo_enviado
+    while True:
+        if arduino and arduino.is_open:
+            try:
+                if disparar and not disparo_enviado:
+                    arduino.write(b"Disparar\n")
+                    print("Enviado para o Arduino: Disparar")
+                    disparo_enviado = True
+                elif not disparar:
+                    disparo_enviado = False  # libera para o próximo disparo
+            except serial.SerialException as e:
+                print(f"Erro ao enviar comando de disparo: {e}")
+        time.sleep(0.05)
+
+def thread_recebe_pontuacao_arduino2():
+    while True:
+        if arduino2 and arduino2.is_open:
+            try:
+                linha = arduino2.readline().decode().strip()
+                if linha:
+                    print("Arduino 2 disse:", linha)
+                    if linha.lower() == "acertou":
+                        adicionar_ponto()
+            except serial.SerialException as e:
+                print(f"Erro ao ler do Arduino 2: {e}")
+        time.sleep(0.05)
+
 
 # Inicia a thread após conectar
 if arduino and arduino.is_open:
     thread_arduino = threading.Thread(target=enviar_para_arduino_thread, daemon=True)
+    thread_disparo_loop = threading.Thread(target=thread_disparo, daemon=True)
     thread_arduino.start()
+    thread_disparo_loop.start()
+
+if arduino2 and arduino2.is_open:
+    thread_pontuacao = threading.Thread(target=thread_recebe_pontuacao_arduino2, daemon=True)
+    thread_pontuacao.start()
 
 # --- Funções auxiliares ---
 def distancia(p1, p2):
@@ -83,6 +130,18 @@ def mao_direita_fechada(landmarks):
         if dist < 0.2:
             dedos_fechados += 1
     return dedos_fechados >= 4
+
+_pontos_pendentes = 0
+
+def adicionar_ponto():
+    global _pontos_pendentes
+    _pontos_pendentes += 1
+
+def consumir_pontos():
+    global _pontos_pendentes
+    pontos = _pontos_pendentes
+    _pontos_pendentes = 0
+    return pontos
 
 # --- Função principal ---
 def rodar_mira_jogo(frame_input, video_width, video_height):
@@ -149,8 +208,8 @@ def rodar_mira_jogo(frame_input, video_width, video_height):
                     angulo_min + (valor - valor_min) * (angulo_max - angulo_min) / (valor_max - valor_min)
                 )
 
-            angulo_x = mapear_para_servo(mira_x_prev, 0, w, 180, 0)
-            angulo_y = mapear_para_servo(mira_y_prev, 0, h, 120, 85)
+            angulo_x = mapear_para_servo(mira_x_prev, 0, w, 150, 30)
+            angulo_y = mapear_para_servo(mira_y_prev, 0, h, 130, 85)
 
             # Atualiza as variáveis que a thread irá enviar ao Arduino
             with lock:
@@ -171,9 +230,7 @@ def rodar_mira_jogo(frame_input, video_width, video_height):
         angulo_y = 90
 
     if hands_results.multi_hand_landmarks and hands_results.multi_handedness:
-        for hand_landmarks, hand_handedness in zip(
-            hands_results.multi_hand_landmarks, hands_results.multi_handedness
-        ):
+        for hand_landmarks, hand_handedness in zip(hands_results.multi_hand_landmarks, hands_results.multi_handedness):
             if hand_handedness.classification[0].label == "Right":
                 if mao_direita_fechada(hand_landmarks.landmark):
                     if tempo_inicio_fechada is None:
@@ -190,8 +247,9 @@ def rodar_mira_jogo(frame_input, video_width, video_height):
 
     if disparar:
         disparar_status_text = "DISPARAR!"
-        print("Disparar")
+        print("Disparar!")
     else:
         disparar_status_text = "PRONTO"
+        
 
     return image, angulo_x, angulo_y, disparar_status_text
