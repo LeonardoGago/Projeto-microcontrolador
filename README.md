@@ -7,11 +7,13 @@ Um jogo interativo que usa visão computacional com MediaPipe e OpenCV para dete
 
 ## 🗂 Estrutura do Projeto
 
+```
 ├── jogo.py         # Loop principal do jogo
 ├── mira.py         # Processamento da câmera, detecção de pose/mão, controle do Arduino
 ├── interface.py    # Sistema de menus e interface gráfica lateral
 ├── arduino ├──  lancador.ino
             ├──  cesta.ino
+```
 
 ## 🧠 Funcionalidades
 - Detecção de pose com MediaPipe
@@ -32,7 +34,7 @@ Um jogo interativo que usa visão computacional com MediaPipe e OpenCV para dete
 - Arduino
 Placa Arduino compatível com servos
 Código que:
-   - Lê mensagens no formato "X,Y\n" para mover os servos
+   - Lê mensagens no formato "X,Y" para mover os servos
    - Executa o disparo ao receber "Disparar\n"
 
 ## 🕹 Como Jogar
@@ -50,7 +52,7 @@ Execute o jogo.py:
 
 A pontuação é atualizada com base na lógica de acerto que você pode implementar
 
-## 🔧 Explicação dos Arquivos
+## 🔧 Explicação dos Arquivos Python
 
 - mira.py
 
@@ -59,7 +61,7 @@ Usa MediaPipe para rastrear:
    - Mão direita → ativação do disparo
    - Calcula os ângulos dos servos com base na posição do punho
    - Envia comandos ao Arduino via serial:
-        "X,Y\n" para movimentação contínua
+        "X,Y" para movimentação contínua
         "Disparar\n" para disparo único
 
 - interface.py
@@ -74,7 +76,7 @@ Usa MediaPipe para rastrear:
     - Integra imagem da câmera com interface
     - Desenha o HUD lateral e atualiza informações em tempo real
 
-## Arduinos 
+## Lógica dos arduinos
 
 1) O primeiro arduino controla a cesta com 4 motores de passos, e a cesta contém um sensor binário que detecta a luz branca e preta, como a cesta é branca e a bolinha preta o arduino consegue passar via serial para o programa em python exiber a pontuação no placar
 
